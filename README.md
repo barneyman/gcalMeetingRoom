@@ -9,9 +9,11 @@ The service written in Python, using pyGame to generate the UI locally on a tabl
 
 ![](https://github.com/course-hero/google-calendar-display/blob/master/calendar-display.jpg)
 
-Here's a screenshot of the app, when the room is free, and shows two upcoming events:
+Screen Shots:
 
-![](https://github.com/course-hero/google-calendar-display/blob/master/screenshot-free.png)
+![](https://github.com/barneyman/gcalMeetingRoom/blob/master/Free.PNG)
+![](https://github.com/barneyman/gcalMeetingRoom/blob/master/Soon.PNG)
+![](https://github.com/barneyman/gcalMeetingRoom/blob/master/busy.PNG)
 
 
 Installation
