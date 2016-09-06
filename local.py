@@ -19,9 +19,25 @@ import sys
 import os
 import json
 
-from flask import Flask
-from flask import render_template
-app = Flask(__name__)
+import pyScreen
+import pygame
+
+import time
+
+import signal
+import sys, getopt
+
+def handler(signum, frame):
+	print "Told to die ..."
+	sys.exit()
+
+signal.signal(signal.SIGTERM, handler)
+
+print "Current PID ", os.getpid()
+
+#from flask import Flask
+#from flask import render_template
+#app = Flask(__name__)
 
 import calendar_config
 
@@ -63,8 +79,20 @@ http = credentials.authorize(http)
 # Build a service object for interacting with the API. Visit
 # the Google Developers Console
 # to get a developerKey for your own application.
-service = build(serviceName='calendar', version='v3', http=http,
-       developerKey=calendar_config.DEVELOPER_KEY)
+
+foundServer=False
+
+while not foundServer:
+	try:
+		service = build(serviceName='calendar', version='v3', http=http,developerKey=calendar_config.DEVELOPER_KEY)
+		foundServer=True
+	except:
+		print "could not build, retrying ..."
+		e = sys.exc_info()[0]
+		print 'exception - ',e
+		time.sleep(5)
+		foundServer=False
+	
 
 la = pytz.timezone("Australia/Melbourne")
 
@@ -96,8 +124,8 @@ def get_events(room_name):
     start_time = datetime(year=now.year, month=now.month, day=now.day, tzinfo=la)
     end_time = start_time + timedelta(days=1)
 
-    print "Running at", now.strftime("%A %d %B %Y, %I:%M%p")
-    print "Room name", room_name
+    print "Running at", now.strftime("%A %d %B %Y, %I:%M%p"),
+    print " - ", room_name
 
     if not os.path.isfile('calendars.json'):
         # this is duplicated from the calendars() method
@@ -127,21 +155,52 @@ def get_events(room_name):
     next_start = None
     next_end = None
     status = "FREE"
+    roomCurrentState = pyScreen.roomState.free
 
     for event in events['items']:
-        start = dateutil.parser.parse(event['start']['dateTime']).replace(tzinfo=None)
-        end = dateutil.parser.parse(event['end']['dateTime']).replace(tzinfo=None)
 
+		#DEBUG	
+        #print event
+        #print '----------------------------------------'
+
+        # if this is an all day event it has a 'date' for start and end, not a 'dateTime'
+	
+        if not 'dateTime' in event['start']:
+	        start = dateutil.parser.parse(event['start']['date']).replace(tzinfo=None)
+        else:
+            start = dateutil.parser.parse(event['start']['dateTime']).replace(tzinfo=None)
+
+
+        if not 'dateTime' in event['end']:
+            end = dateutil.parser.parse(event['end']['date']).replace(tzinfo=None)
+        else:
+            end = dateutil.parser.parse(event['end']['dateTime']).replace(tzinfo=None)
+
+
+        if not 'displayName' in event['creator']:
+            event['creator']['displayName']=event['creator']['email']
+
+        if not 'summary' in event:
+            event['summary']="(no title)"
+
+			
         if now <= end:
             items.append({'name': event['summary'], 
-                'creator': event['creator']['displayName'], 
-                'start': start.strftime("%I:%M%p"), 
-                'end': end.strftime("%I:%M%p"),
+				'creator': event['creator']['displayName'], 
+                'start': start.strftime("%-I:%M%p"), 
+                'end': end.strftime("%-I:%M%p"),
                 })
  
             if start < now and end > now:
-                status = "BUSY"
+                if 'hangoutLink' in event:
+                    status = "OnAir"
+                    roomCurrentState = pyScreen.roomState.busyHangout
+                else:
+                    status = "BUSY"
+                    roomCurrentState = pyScreen.roomState.busy
+					
                 next_end = (end - now)
+
 
             if start > now and not next_start:
                 next_start = (start - now)
@@ -150,10 +209,15 @@ def get_events(room_name):
     next_start_str = create_time_string(next_start)
     next_end_str = create_time_string(next_end)
 
-    if status == "FREE" and next_start and next_start < timedelta(minutes=15):
+    if roomCurrentState == pyScreen.roomState.free and next_start and next_start < timedelta(minutes=15):
+        roomCurrentState == pyScreen.roomState.soonBusy
         status = "SOON"
 
+    print 'status ', status, 'start in ', next_start_str, 'end in ',next_end_str
+    print '============================================='
+
     return {'room': events['summary'], 
+		'roomState' : roomCurrentState,
         'status': status, 
         'now': now.strftime("%A %d %B %Y, %I:%M%p"), 
         'events': items, 
@@ -164,7 +228,7 @@ def get_events(room_name):
 		
 		
 # This method has a very sub-optimal approach to time zones.
-@app.route('/calendars')
+#@app.route('/calendars')
 def calendars():
     calendars = {}
     items = []
@@ -218,25 +282,26 @@ def calendars():
 		
 		
 		
-@app.route('/index/<room_name>')
-def index(room_name=None):
-    events = get_events(room_name)
-
-    return render_template('index.html', 
-        status=events['status'], 
-        events=events['events'], 
-        next_start_str=events['next_start_str'], 
-        next_end_str=events['next_end_str'], 
-        now=events['now'],
-        room=room_name
-    )
-
-@app.route('/<room_id>')
-def main(room_id):
-  return render_template('main.html', room=room_id)
-
-if __name__ == '__main__':
-    app.run(host="0.0.0.0", debug=True)
 
 
+  
+cs=pyScreen.calenderScreen()
 
+rn="Melbourne Conference Room"
+
+while True:
+
+	#try:
+	events=get_events(rn)
+	cs.Consume(rn,events)
+	#except:
+	#	e = sys.exc_info()[0]
+	#	print 'exception - ',e
+		
+
+	pygame.event.pump()
+
+	time.sleep(45)
+
+
+	

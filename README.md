@@ -1,9 +1,11 @@
-Google Calendar Display
-=======================
+Google Calendar Display - for pygame
+====================================
 
-A very simple web service to display conference room status outside the room. Useful to indicate which rooms are free or booked. Created as part of a Course Hero hackathon in November 2014.
+Cloned originally from https://github.com/course-hero/google-calendar-display
 
-The service is a Flask app, written in Python, intended to be viewed from a web browser (in fullscreen or kiosk mode) on a tablet. The tablet could be mounted on the wall or window outside a room. For example, here's a prototype mounted on the Superman conference room at Course Hero:
+A very simple pygame app to display conference room status outside the room. Useful to indicate which rooms are free or booked. 
+
+The service written in Python, using pyGame to generate the UI locally on a tablet. The tablet could be mounted on the wall or window outside a room. For example, here's a prototype mounted on the Superman conference room at Course Hero:
 
 ![](https://github.com/course-hero/google-calendar-display/blob/master/calendar-display.jpg)
 
@@ -14,7 +16,7 @@ Here's a screenshot of the app, when the room is free, and shows two upcoming ev
 
 Installation
 -------------
-Install Flask and the Google client libraries via pip:
+Install Flask, pygame and the Google client libraries via pip:
 
 ```
 $ sudo apt-get update
@@ -31,9 +33,16 @@ Basic Usage
 -------------
 You can run the server in debug mode:
 
+original http version
 ```
 $ python server.py
 ```
+
+local pygame version
+```
+$ python local.py
+```
+
 
 Using default Flask settings, you would access the app at:
 
