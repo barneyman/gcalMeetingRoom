@@ -115,111 +115,118 @@ def create_time_string(dt):
 
 
 def get_events(room_name):
-    items = []
-    now = datetime.utcnow()
+	items = []
+	now = datetime.utcnow()
 
-    la_offset = la.utcoffset(datetime.utcnow())
-    now = now + la_offset
+	la_offset = la.utcoffset(datetime.utcnow())
+	now = now + la_offset
 
-    start_time = datetime(year=now.year, month=now.month, day=now.day, tzinfo=la)
-    end_time = start_time + timedelta(days=1)
+	start_time = datetime(year=now.year, month=now.month, day=now.day, tzinfo=la)
+	end_time = start_time + timedelta(days=1)
 
-    print "Running at", now.strftime("%A %d %B %Y, %I:%M%p"),
-    print " - ", room_name
+	print "Running at", now.strftime("%A %d %B %Y, %I:%M%p"),
+	print " - ", room_name
 
-    if not os.path.isfile('calendars.json'):
-        # this is duplicated from the calendars() method
-        calendars = {}
-        calendar_list = service.calendarList().list().execute()
-        for calendar_list_entry in calendar_list['items']:
-            if calendar_list_entry['id'] not in calendar_config.EXCLUSIONS:
-                calendars[calendar_list_entry['id']] = calendar_list_entry['summary']
+	if not os.path.isfile('calendars.json'):
+		# this is duplicated from the calendars() method
+		calendars = {}
+		calendar_list = service.calendarList().list().execute()
+		for calendar_list_entry in calendar_list['items']:
+			if calendar_list_entry['id'] not in calendar_config.EXCLUSIONS:
+				calendars[calendar_list_entry['id']] = calendar_list_entry['summary']
 
         # store this to a local file
-        with open('calendars.json', mode='w') as calendar_file:
-            json.dump({value: key for key, value in calendars.items()}, calendar_file)
+		with open('calendars.json', mode='w') as calendar_file:
+			json.dump({value: key for key, value in calendars.items()}, calendar_file)
 
-    with open('calendars.json', 'r') as f:
-        calendars = json.load(f)
+	with open('calendars.json', 'r') as f:
+		calendars = json.load(f)
 
-    room_id = calendars[room_name]
+	room_id = calendars[room_name]
 
-    events = service.events().list(
-    	calendarId=room_id,
-    	orderBy='startTime',
-    	singleEvents=True,
-    	timeMin=start_time.isoformat(),
-    	timeMax=end_time.isoformat()
-    ).execute()
+	events = service.events().list(
+		calendarId=room_id,
+		orderBy='startTime',
+		singleEvents=True,
+		timeMin=start_time.isoformat(),
+		timeMax=end_time.isoformat()
+	).execute()
 
-    next_start = None
-    next_end = None
-    status = "FREE"
-    roomCurrentState = pyScreen.roomState.free
+	currentEventId=None
+	next_start = None
+	next_end = None
+	status = "FREE"
+	roomCurrentState = pyScreen.roomState.free
 
-    for event in events['items']:
+	for event in events['items']:
 
-		#DEBUG	
-        #print event
-        #print '----------------------------------------'
+		#DEBUG
+		#print event
+		#print '----------------------------------------'
 
-        # if this is an all day event it has a 'date' for start and end, not a 'dateTime'
-	
-        if not 'dateTime' in event['start']:
-	        start = dateutil.parser.parse(event['start']['date']).replace(tzinfo=None)
-        else:
-            start = dateutil.parser.parse(event['start']['dateTime']).replace(tzinfo=None)
+		# if this is an all day event it has a 'date' for start and end, not a 'dateTime'
 
 
-        if not 'dateTime' in event['end']:
-            end = dateutil.parser.parse(event['end']['date']).replace(tzinfo=None)
-        else:
-            end = dateutil.parser.parse(event['end']['dateTime']).replace(tzinfo=None)
+		if not 'dateTime' in event['start']:
+			start = dateutil.parser.parse(event['start']['date']).replace(tzinfo=None)
+		else:
+			start = dateutil.parser.parse(event['start']['dateTime']).replace(tzinfo=None)
 
 
-        if not 'displayName' in event['creator']:
-            event['creator']['displayName']=event['creator']['email']
+		if not 'dateTime' in event['end']:
+			end = dateutil.parser.parse(event['end']['date']).replace(tzinfo=None)
+		else:
+			end = dateutil.parser.parse(event['end']['dateTime']).replace(tzinfo=None)
 
-        if not 'summary' in event:
-            event['summary']="(no title)"
 
-			
-        if now <= end:
-            items.append({'name': event['summary'], 
+		if not 'displayName' in event['creator']:
+			event['creator']['displayName']=event['creator']['email']
+
+		if not 'summary' in event:
+			event['summary']="(no title)"
+
+		# if we are before it ends, add it to the list of upcoming	
+		if now <= end:
+			items.append({'name': event['summary'], 
 				'creator': event['creator']['displayName'], 
-                'start': start.strftime("%-I:%M%p"), 
-                'end': end.strftime("%-I:%M%p"),
+                'start': start.strftime("%I:%M%p"), 
+                'end': end.strftime("%I:%M%p"),
+				'eventid' : event['id']
                 })
  
-            if start < now and end > now:
-                if 'hangoutLink' in event:
-                    status = "OnAir"
-                    roomCurrentState = pyScreen.roomState.busyHangout
-                else:
-                    status = "BUSY"
-                    roomCurrentState = pyScreen.roomState.busy
+			# if it's currently running ...
+			if start < now and end > now:
+				if 'hangoutLink' in event:
+					status = "OnAir"
+					roomCurrentState = pyScreen.roomState.busyHangout
+				else:
+					status = "BUSY"
+					roomCurrentState = pyScreen.roomState.busy
 					
-                next_end = (end - now)
+				currentEventId=event['id']
+				next_end = (end - now)
+
+			if start > now and not next_start:
+				next_start = (start - now)
 
 
-            if start > now and not next_start:
-                next_start = (start - now)
+	next_start_str = create_time_string(next_start)
+	next_end_str = create_time_string(next_end)
 
+	if roomCurrentState == pyScreen.roomState.free and next_start and next_start < timedelta(minutes=15):
+		roomCurrentState == pyScreen.roomState.soonBusy
+		status = "SOON"
 
-    next_start_str = create_time_string(next_start)
-    next_end_str = create_time_string(next_end)
+	print 'status ', status, 'start in ', next_start_str, 'end in ',next_end_str
+	print '============================================='
 
-    if roomCurrentState == pyScreen.roomState.free and next_start and next_start < timedelta(minutes=15):
-        roomCurrentState == pyScreen.roomState.soonBusy
-        status = "SOON"
-
-    print 'status ', status, 'start in ', next_start_str, 'end in ',next_end_str
-    print '============================================='
-
-    return {'room': events['summary'], 
+	return {'room': events['summary'], 
+		'serviceEngine' : service,
 		'roomState' : roomCurrentState,
+		'currentEventId':currentEventId,
         'status': status, 
         'now': now.strftime("%A %d %B %Y, %I:%M%p"), 
+		'calendarid' : room_id,
         'events': items, 
         'next_start_str': next_start_str, 
         'next_end_str': next_end_str}
@@ -292,16 +299,17 @@ rn="Melbourne Conference Room"
 while True:
 
 	#try:
-	events=get_events(rn)
-	cs.Consume(rn,events)
+    events=get_events(rn)
+    cs.Consume(rn,events)
 	#except:
 	#	e = sys.exc_info()[0]
 	#	print 'exception - ',e
-		
 
-	pygame.event.pump()
+    cs.UserInteraction(45)
 
-	time.sleep(45)
+
+	#pygame.event.pump()
+	#time.sleep(45)
 
 
 	
