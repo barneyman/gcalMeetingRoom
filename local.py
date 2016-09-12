@@ -214,7 +214,7 @@ def get_events(room_name):
 	next_end_str = create_time_string(next_end)
 
 	if roomCurrentState == pyScreen.roomState.free and next_start and next_start < timedelta(minutes=15):
-		roomCurrentState == pyScreen.roomState.soonBusy
+		roomCurrentState = pyScreen.roomState.soonBusy
 		status = "SOON"
 
 	print 'status ', status, 'start in ', next_start_str, 'end in ',next_end_str
