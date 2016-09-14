@@ -294,7 +294,8 @@ def calendars():
   
 cs=pyScreen.calenderScreen()
 
-rn="Melbourne Conference Room"
+#rn="Melbourne Conference Room"
+rn="CORP Melbourne Conf Rm"
 
 while True:
 

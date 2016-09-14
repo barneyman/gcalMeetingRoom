@@ -42,7 +42,7 @@ class pySurface:
 		self.childSurfaces.append(child)
 		
 	def MouseClick(self):
-		return
+		return False
 		
 	# given an ABS screen co-ord, is the point inside you?
 	def HitTest(self,x,y):
@@ -71,8 +71,8 @@ class pySurface:
 		self.ActualScreen().blit(self.surface,(self.myExtents.x,self.myExtents.y))
 		return textbox
 		
-	def DrawLeftText(self, text,size=25, textrgb=(255,255,255),offset=(0,0)):
-		scantext=self.BuildText(text,size,textrgb)
+	def DrawLeftText(self, text,size=25, textrgb=(255,255,255), offset=(0,0), reduceToFit=False):
+		scantext=self.BuildText(text,size,textrgb,reduceToFit)
 		textbox=scantext.get_rect()
 		textbox.left = self.surface.get_rect().left
 		textbox=textbox.move(offset)
@@ -80,7 +80,7 @@ class pySurface:
 		self.ActualScreen().blit(self.surface,(self.myExtents.x,self.myExtents.y))
 		return textbox
 		
-	def BuildText(self, text,size=25, textrgb=(255,255,255)):
+	def BuildText(self, text,size=25, textrgb=(255,255,255), reduceToFit=False):
 	
 		# have a look for newlines
 		lines=text.split('\n')
@@ -88,6 +88,10 @@ class pySurface:
 		if len(lines)==1:
 			font=pygame.font.Font(None,size)
 			scantext=font.render(text,1,textrgb)
+
+			if reduceToFit==True and (scantext.get_rect().w > self.myExtents.w or scantext.get_rect().h > self.myExtents.h):
+				return self.BuildText(text, size-1, textrgb, reduceToFit)
+
 			return scantext
 			
 		textboxes=list()
@@ -115,6 +119,10 @@ class pySurface:
 			linebox.top=lineTop
 			lineTop=lineTop+linebox.h
 			textSurface.blit(each,linebox)
+
+			if reduceToFit==True and (textSurface.get_rect().w > self.myExtents.w or textSurface.get_rect().h > self.myExtents.h):
+				return self.BuildText(text, size-1, textrgb, reduceToFit)
+
 			
 		return textSurface
 			
@@ -163,6 +171,7 @@ class pyButton(pySurface):
 
 	def MouseClick(self):
 		self.actionOnClick()
+		return True
 
 
 
@@ -173,15 +182,17 @@ class pyScreen:
 #		os.environ['SDL_VIDEODRIVER']="directfb"
 
 		# for touch screen
-#		os.environ['SDL_MOUSEDRV']='TSLIB'
-#		os.environ['SDL_MOUSEDEV']='/dev/input/event0'
+		os.environ['SDL_MOUSEDRV']='TSLIB'
+		os.environ['SDL_MOUSEDEV']='/dev/input/mouse0'
 
 		pygame.init()
 
 		if self.pyScreen_get_init():
 			# div 2 only for PC
-			self.screenSize=pygame.Rect(0,0,pygame.display.Info().current_w/2,pygame.display.Info().current_h/2)
+			self.screenSize=pygame.Rect(0,0,pygame.display.Info().current_w,pygame.display.Info().current_h)
 			self.screen = pygame.display.set_mode((self.screenSize.w,self.screenSize.h))
+
+		#print self.screenSize
 	
 		pygame.mouse.set_visible(0)
 
@@ -225,17 +236,20 @@ class pyScreen:
 
 				# print if mouse is pressed.
 				# get_pressed() tells you which mouse button is pressed
-				if event.type == pygame.MOUSEBUTTONDOWN:
-					hitsurface=self.ActualSurface().GetSurfaceHit(event.pos[0],event.pos[1])
-					if hitsurface != None:
-						hitsurface.MouseClick()
-						return
+				if event.type == pygame.MOUSEBUTTONDOWN or event.type==pygame.MOUSEMOTION:
+					print "mouse at (%d, %d)" % event.pos
+					#hitsurface=self.ActualSurface().GetSurfaceHit(event.pos[0],event.pos[1])
+					#if hitsurface != None:
+						#if hitsurface.MouseClick()==True:
+							#return
+
+
+
 					#print 'mouse pressed ', pygame.mouse.get_pressed()
 				# print if mouse is released.
 				#elif event.type == pygame.MOUSEBUTTONUP:
 				#	print 'mouse released', pygame.mouse.get_pressed()
 				#elif event.type == pygame.MOUSEMOTION:
-					#print "mouse at (%d, %d)" % event.pos,
 					#hitsurface=self.ActualSurface().GetSurfaceHit(event.pos[0],event.pos[1])
 					#if hitsurface != None:
 					#	print hitsurface.surfaceName
@@ -320,11 +334,11 @@ class calenderScreen:
 		
 		roomname=roomname.replace(' ','\n')
 		
-		self.roomName.DrawLeftText(roomname,100,(0,0,0))
+		self.roomName.DrawLeftText(roomname,100,(0,0,0),(0,0),True)
 
-        # and add the relinquish button
-		if status==roomState.busy or status==roomState.busyHangout:
-			button=pyButton(self.mainStatusWnd,"Relinquish Room", self.RelinquishRoom, (20,self.screensize.h/2),((self.screensize.w/2)-40,50))
+	        # and add the relinquish button
+		#if status==roomState.busy or status==roomState.busyHangout:
+		#	button=pyButton(self.mainStatusWnd,"Relinquish Room", self.RelinquishRoom, (20,self.screensize.h/2),((self.screensize.w/2)-40,50))
 
 
 		topline=0;
