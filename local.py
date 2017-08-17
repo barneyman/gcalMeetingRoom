@@ -73,7 +73,7 @@ if credentials is None or credentials.invalid == True:
 
 # Create an httplib2.Http object to handle our HTTP requests and authorize it
 # with our good Credentials.
-http = httplib2.Http()
+http = httplib2.Http(timeout=30)
 http = credentials.authorize(http)
 
 # Build a service object for interacting with the API. Visit
@@ -144,6 +144,7 @@ def get_events(room_name):
 
 	room_id = calendars[room_name]
 
+	print '	execute',
 	events = service.events().list(
 		calendarId=room_id,
 		orderBy='startTime',
@@ -151,6 +152,8 @@ def get_events(room_name):
 		timeMin=start_time.isoformat(),
 		timeMax=end_time.isoformat()
 	).execute()
+	print 'out'
+
 
 	currentEventId=None
 	next_start = None
@@ -297,16 +300,31 @@ cs=pyScreen.calenderScreen()
 #rn="Melbourne Conference Room"
 rn="CORP Melbourne Conf Rm"
 
+exceptionsCaught=0
+
 while True:
 
-	#try:
-    events=get_events(rn)
-    cs.Consume(rn,events)
-	#except:
-	#	e = sys.exc_info()[0]
-	#	print 'exception - ',e
+	try:
+		print 'get_events',
+		events=get_events(rn)
+		print 'out'
+		print 'Consume',
+		cs.Consume(rn,events)
+		print 'out'
 
-    cs.UserInteraction(45)
+		# reset exceptions caught
+		exceptionsCaught=0
+	except:
+		e = sys.exc_info()[0]
+		print 'exception - ',e
+		exceptionsCaught=exceptionsCaught+1
+		if exceptionsCaught>10:
+			os.system('sudo shutdown -r')
+			break
+
+	print 'ui',
+	cs.UserInteraction(45)
+	print 'out'
 
 
 	#pygame.event.pump()
