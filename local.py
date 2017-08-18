@@ -35,18 +35,9 @@ signal.signal(signal.SIGTERM, handler)
 
 print "Current PID ", os.getpid()
 
-#from flask import Flask
-#from flask import render_template
-#app = Flask(__name__)
-
 import calendar_config
 
 FLAGS = gflags.FLAGS
-
-# had to install:
-# sudo apt-get update
-# sudo apt-get install python-pip
-# sudo pip install --upgrade google-api-python-client python-gflags python-dateutil Flask pytz
 
 # Set up a Flow object to be used if we need to authenticate. This
 # sample uses OAuth 2.0, and we set up the OAuth2WebServerFlow with
@@ -60,8 +51,6 @@ FLOW = OAuth2WebServerFlow(
     scope=calendar_config.SCOPE,
     user_agent=calendar_config.USER_AGENT)
 
-# To disable the local server feature, uncomment the following line:
-# FLAGS.auth_local_webserver = False
 
 # If the Credentials don't exist or are invalid, run through the native client
 # flow. The Storage object will ensure that if successful the good
@@ -86,15 +75,15 @@ while not foundServer:
 	try:
 		service = build(serviceName='calendar', version='v3', http=http,developerKey=calendar_config.DEVELOPER_KEY)
 		foundServer=True
-	except:
+		print 'service built'
+	except Exception as e:
 		print "could not build, retrying ..."
-		e = sys.exc_info()[0]
 		print 'exception - ',e
 		time.sleep(5)
 		foundServer=False
 	
 
-la = pytz.timezone("Australia/Melbourne")
+la = pytz.timezone(calendar_config.TIMEZONE)
 
 def create_time_string(dt):
     if not dt:
@@ -132,8 +121,8 @@ def get_events(room_name):
 		calendars = {}
 		calendar_list = service.calendarList().list().execute()
 		for calendar_list_entry in calendar_list['items']:
-			if calendar_list_entry['id'] not in calendar_config.EXCLUSIONS:
-				calendars[calendar_list_entry['id']] = calendar_list_entry['summary']
+			#if calendar_list_entry['id'] not in calendar_config.EXCLUSIONS:
+			calendars[calendar_list_entry['id']] = calendar_list_entry['summary']
 
         # store this to a local file
 		with open('calendars.json', mode='w') as calendar_file:
@@ -141,6 +130,15 @@ def get_events(room_name):
 
 	with open('calendars.json', 'r') as f:
 		calendars = json.load(f)
+
+	if room_name not in calendars:
+		return { 
+		'roomState' : pyScreen.roomState.notFound,
+		'events' : {},
+		'status' : '!Error!', 
+        'now': now.strftime("%A %d %B %Y, %I:%M%p")
+		}
+
 
 	room_id = calendars[room_name]
 
@@ -237,68 +235,15 @@ def get_events(room_name):
 		
 		
 		
-# This method has a very sub-optimal approach to time zones.
-#@app.route('/calendars')
-def calendars():
-    calendars = {}
-    items = []
-    free_rooms = []
-    events = []
-    upcoming = []
 
-    now = la.localize(datetime.now())
-    start_time = now - timedelta(hours=8)
-    end_time = start_time + timedelta(hours=8)
-
-    calendar_list = service.calendarList().list().execute()
-    for calendar_list_entry in calendar_list['items']:
-        if calendar_list_entry['id'] not in calendar_config.EXCLUSIONS:
-            calendars[calendar_list_entry['id']] = calendar_list_entry['summary']
-            items.append({'id': calendar_list_entry['id']})
-            free_rooms.append(calendar_list_entry['id'])
-
-    # store this to a local file
-    with open('calendars.json', mode='w') as calendar_file:
-        json.dump({value: key for key, value in calendars.items()}, calendar_file)
-
-    free_busy = service.freebusy().query(body={"timeMin": start_time.isoformat(), 
-        "timeMax": end_time.isoformat(), 
-        "items":items}).execute()
-
-    for calendar in free_busy['calendars']:
-        data = free_busy['calendars'][calendar]
-        if data['busy']:
-            busy = data['busy'][0]
-            start = dateutil.parser.parse(busy['start']) - timedelta(hours=8)
-            end = dateutil.parser.parse(busy['end']) - timedelta(hours=8)
-            diff = start - (now - timedelta(hours=16))
-
-            event = {'room': calendars[calendar], 
-                     'start': start.strftime("%I:%M%p"), 
-                     'end': end.strftime("%I:%M%p")}
-
-            if diff < timedelta(minutes=5):
-                events.append(event)
-                free_rooms.remove(calendar)
-            elif diff < timedelta(minutes=35):
-                upcoming.append(event)
-                free_rooms.remove(calendar)
-
-    return render_template('calendars.html', 
-                           events=events, 
-                           upcoming=upcoming,
-                           now=now.strftime("%A %d %B %Y, %I:%M%p"),
-                           free_rooms=[calendars[f] for f in free_rooms])
-		
 		
 		
 
 
-  
+# build a screen  
 cs=pyScreen.calenderScreen()
 
-#rn="Melbourne Conference Room"
-rn="CORP Melbourne Conf Rm"
+rn=calendar_config.CALENDAR
 
 exceptionsCaught=0
 
@@ -314,8 +259,7 @@ while True:
 
 		# reset exceptions caught
 		exceptionsCaught=0
-	except:
-		e = sys.exc_info()[0]
+	except Exception as e:
 		print 'exception - ',e
 		exceptionsCaught=exceptionsCaught+1
 		if exceptionsCaught>10:
@@ -327,8 +271,6 @@ while True:
 	print 'out'
 
 
-	#pygame.event.pump()
-	#time.sleep(45)
 
 
 	

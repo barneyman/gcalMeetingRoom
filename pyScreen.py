@@ -178,10 +178,10 @@ class pyButton(pySurface):
 class pyScreen:
 
 	def __init__(self):
-#		os.environ["SDL_FBDEV"] = "/dev/fb0"
-#		os.environ['SDL_VIDEODRIVER']="directfb"
+		#os.environ["SDL_FBDEV"] = "/dev/fb0"
+		#os.environ['SDL_VIDEODRIVER']="directfb"
 
-		# for touch screen
+		# for touch screen on raspberry PI
 		os.environ['SDL_MOUSEDRV']='TSLIB'
 		os.environ['SDL_MOUSEDEV']='/dev/input/mouse0'
 
@@ -192,7 +192,7 @@ class pyScreen:
 			self.screenSize=pygame.Rect(0,0,pygame.display.Info().current_w,pygame.display.Info().current_h)
 			self.screen = pygame.display.set_mode((self.screenSize.w,self.screenSize.h))
 
-		#print self.screenSize
+		print self.screenSize
 	
 		pygame.mouse.set_visible(0)
 
@@ -236,8 +236,8 @@ class pyScreen:
 
 				# print if mouse is pressed.
 				# get_pressed() tells you which mouse button is pressed
-				if event.type == pygame.MOUSEBUTTONDOWN or event.type==pygame.MOUSEMOTION:
-					print "mouse at (%d, %d)" % event.pos
+				#if event.type == pygame.MOUSEBUTTONDOWN or event.type==pygame.MOUSEMOTION:
+					#print "mouse at (%d, %d)" % event.pos
 					#hitsurface=self.ActualSurface().GetSurfaceHit(event.pos[0],event.pos[1])
 					#if hitsurface != None:
 						#if hitsurface.MouseClick()==True:
@@ -268,6 +268,7 @@ class roomState(object):
 	soonBusy=2
 	busy=3
 	busyHangout=4
+	notFound=5
 
 class calenderScreen:
 
@@ -295,6 +296,11 @@ class calenderScreen:
 		# first, get room status
 		status=events['roomState']
 		narrative='No upcoming events'
+
+		if status==roomState.notFound:
+			rgbback=(128,128,0)
+			narrative='Room Name not found'
+
 		if status==roomState.free:
 			rgbback=(0,128,0)
 			if events['next_start_str']:
