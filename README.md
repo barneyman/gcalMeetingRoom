@@ -27,6 +27,7 @@ $ sudo pip install --upgrade google-api-python-client python-gflags python-dateu
 ```
 
 Windows
+
 Install Python 2
 ```
 pip install --upgrade google-api-python-client python-gflags python-dateutil pytz pygame
@@ -37,8 +38,9 @@ pip will be in the python scripts directory
 Preparation
 -------------
 1. In Google Developer Console, create a project, create an API key (with no key restriction), and OAuth2 Client ID
-2a. The GCAL you wish to show should be in the list of calendars available to the "authorising google account" OR
-2b. where i work, we've set up a google room resource - no idea how that was done - IT faeries!
+2. GCAL
+	2a. The GCAL you wish to show should be in the list of calendars available to the "authorising google account" OR
+	2b. where i work, we've set up a google room resource - no idea how that was done - IT faeries!
 3. Enable the Calendar API for your project (Library / Google Calendar API / Enable)
 
 
@@ -62,9 +64,9 @@ The first time you run it, it will provide an URL you will have to visit to auth
 Hardware
 -------------
 
-RPI3 - http://au.element14.com/raspberry-pi/raspberrypi-modb-1gb/raspberry-pi-3-model-b/dp/2525226
-Screen - http://au.element14.com/raspberry-pi/raspberrypi-display/raspberry-pi-7inch-touchscreen/dp/2473872?MER=sy-me-pd-mi-acce
-Case - http://au.element14.com/multicomp/cbrpp-ts-blk-wht/raspberry-pi-touchscreen-enclosure/dp/2494691?MER=bn_level5_5NP_EngagementRecSingleItem_1
+* RPI3 - http://au.element14.com/raspberry-pi/raspberrypi-modb-1gb/raspberry-pi-3-model-b/dp/2525226
+* Screen - http://au.element14.com/raspberry-pi/raspberrypi-display/raspberry-pi-7inch-touchscreen/dp/2473872?MER=sy-me-pd-mi-acce
+* Case - http://au.element14.com/multicomp/cbrpp-ts-blk-wht/raspberry-pi-touchscreen-enclosure/dp/2494691?MER=bn_level5_5NP_EngagementRecSingleItem_1
 
 
 
