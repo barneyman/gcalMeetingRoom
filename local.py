@@ -106,12 +106,14 @@ def create_time_string(dt):
 
 def get_events(room_name):
 	items = []
-	now = datetime.utcnow()
+	
+	#now = datetime.utcnow()
+	#la_offset = la.utcoffset(datetime.utcnow())
+	#now = now + la_offset
 
-	la_offset = la.utcoffset(datetime.utcnow())
-	now = now + la_offset
+	now=datetime.now(la)
 
-	now=now.replace(tzinfo=la)
+	#now=now.replace(tzinfo=la)
 
 	start_time = datetime(year=now.year, month=now.month, day=now.day, tzinfo=la)
 	end_time = start_time + timedelta(days=1)
@@ -173,15 +175,15 @@ def get_events(room_name):
 
 
 		if not 'dateTime' in event['start']:
-			start = dateutil.parser.parse(event['start']['date'])#.replace(tzinfo=None)
+			start = dateutil.parser.parse(event['start']['date']).astimezone(la)#.replace(tzinfo=None)
 		else:
-			start = dateutil.parser.parse(event['start']['dateTime'])#.replace(tzinfo=None)
+			start = dateutil.parser.parse(event['start']['dateTime']).astimezone(la)#.replace(tzinfo=None)
 
 
 		if not 'dateTime' in event['end']:
-			end = dateutil.parser.parse(event['end']['date'])#.replace(tzinfo=la)
+			end = dateutil.parser.parse(event['end']['date']).astimezone(la)#.replace(tzinfo=la)
 		else:
-			end = dateutil.parser.parse(event['end']['dateTime'])#.replace(tzinfo=la)
+			end = dateutil.parser.parse(event['end']['dateTime']).astimezone(la)#.replace(tzinfo=la)
 
 
 		if not 'displayName' in event['creator']:
@@ -214,8 +216,9 @@ def get_events(room_name):
 			if start > now and not next_start:
 				next_start = (start - now)
 		
-		#print now.isoformat(), start.isoformat(), end.isoformat()
-		#print start.astimezone(la), end.astimezone(la)
+		print now, start, end
+		print start.astimezone(la), end.astimezone(la)
+		print '--------------------------------------------------'
 
 
 
