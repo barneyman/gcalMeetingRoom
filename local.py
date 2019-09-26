@@ -13,6 +13,7 @@ from oauth2client.tools import run_flow
 
 from datetime import datetime
 from datetime import timedelta
+from pytz import timezone
 import pytz
 import dateutil.parser
 import sys
@@ -110,6 +111,8 @@ def get_events(room_name):
 	la_offset = la.utcoffset(datetime.utcnow())
 	now = now + la_offset
 
+	now=now.replace(tzinfo=la)
+
 	start_time = datetime(year=now.year, month=now.month, day=now.day, tzinfo=la)
 	end_time = start_time + timedelta(days=1)
 
@@ -142,7 +145,7 @@ def get_events(room_name):
 
 	room_id = calendars[room_name]
 
-	print '	execute',
+	print '	execute',room_id,start_time.isoformat(),end_time.isoformat(),
 	events = service.events().list(
 		calendarId=room_id,
 		orderBy='startTime',
@@ -150,6 +153,7 @@ def get_events(room_name):
 		timeMin=start_time.isoformat(),
 		timeMax=end_time.isoformat()
 	).execute()
+
 	print 'out'
 
 
@@ -169,15 +173,15 @@ def get_events(room_name):
 
 
 		if not 'dateTime' in event['start']:
-			start = dateutil.parser.parse(event['start']['date']).replace(tzinfo=None)
+			start = dateutil.parser.parse(event['start']['date'])#.replace(tzinfo=None)
 		else:
-			start = dateutil.parser.parse(event['start']['dateTime']).replace(tzinfo=None)
+			start = dateutil.parser.parse(event['start']['dateTime'])#.replace(tzinfo=None)
 
 
 		if not 'dateTime' in event['end']:
-			end = dateutil.parser.parse(event['end']['date']).replace(tzinfo=None)
+			end = dateutil.parser.parse(event['end']['date'])#.replace(tzinfo=la)
 		else:
-			end = dateutil.parser.parse(event['end']['dateTime']).replace(tzinfo=None)
+			end = dateutil.parser.parse(event['end']['dateTime'])#.replace(tzinfo=la)
 
 
 		if not 'displayName' in event['creator']:
@@ -190,8 +194,8 @@ def get_events(room_name):
 		if now <= end:
 			items.append({'name': event['summary'], 
 				'creator': event['creator']['displayName'], 
-                'start': start.strftime("%I:%M%p"), 
-                'end': end.strftime("%I:%M%p"),
+                'start': start.astimezone(la).strftime("%I:%M%p"), 
+                'end': end.astimezone(la).strftime("%I:%M%p"),
 				'eventid' : event['id']
                 })
  
@@ -209,6 +213,11 @@ def get_events(room_name):
 
 			if start > now and not next_start:
 				next_start = (start - now)
+		
+		#print now.isoformat(), start.isoformat(), end.isoformat()
+		#print start.astimezone(la), end.astimezone(la)
+
+
 
 
 	next_start_str = create_time_string(next_start)
