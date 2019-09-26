@@ -23,14 +23,14 @@ RPI
 ```
 $ sudo apt-get update
 $ sudo apt-get install python-pip
-$ sudo pip install --upgrade google-api-python-client python-gflags python-dateutil pytz pygame
+$ sudo pip install --upgrade google-api-python-client python-gflags python-dateutil pytz pygame oauth2client
 ```
 
 Windows
 
 Install Python 2
 ```
-pip install --upgrade google-api-python-client python-gflags python-dateutil pytz pygame
+pip install --upgrade google-api-python-client python-gflags python-dateutil pytz pygame oauth2client
 ```
 pip will be in the python scripts directory
 
